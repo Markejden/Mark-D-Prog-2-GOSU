@@ -47,7 +47,7 @@ class Window < Gosu::Window
   def waves
     @spawn_time += @dt
     if @spawn_time >= 1.0
-      @enemies << Enemy.new(100, "dynamic")
+      @enemies << Enemy.new(100.0, "dynamic")
       @spawn_time -= 1.0
     end
   end

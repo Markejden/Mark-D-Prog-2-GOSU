@@ -19,7 +19,7 @@ class Turret < Building
   def update(dt, enemies)
     unless enemies.empty?
       closest_enemy = track_closest(enemies)
-      return if sqrt((closest_enemy.pos[0] - @pos[0])**2  + (closest_enemy.pos[1] - @pos[1])**2) > 100
+      return if sqrt((closest_enemy.pos[0] - @pos[0])**2  + (closest_enemy.pos[1] - @pos[1])**2) > @aim_range
       @turretangle = Gosu.angle(@pos[0], @pos[1], closest_enemy.pos[0], closest_enemy.pos[1])
       closest_enemy.health -= 1
     end
@@ -31,12 +31,6 @@ class Turret < Building
       dist = sqrt((pos[0] - @pos[0])**2  + (pos[1] - @pos[1])**2)
       sqrt((ack.pos[0] - @pos[0])**2  + (ack.pos[1] - @pos[1])**2) > dist ? ack = enemy : ack
     end
-    #positions = enemies.map(&:pos)
-    #closest = positions.compact.min_by {|x,y|sqrt((x - @pos[0])**2 + (y - @pos[1])**2)} #compact för att göra 2d array till 1d och min_by tar minsta i detta fall med par
-    #return unless closest
-    #dist = sqrt((closest[0] - @pos[0])**2 + (closest[1] - @pos[1])**2)
-    #return if dist > @aim_range
-    #@turretangle = Gosu.angle(@pos[0], @pos[1], closest[0], closest[1])
   end
 
   def draw
@@ -50,8 +44,9 @@ class Enemy
 
   def initialize(health,type)
     @health = health #todo
+    @start_health = health
     @type = type #todo
-    @size = 10
+    @size = 10.0
     @pos = nil
     @speed = 50
     @alive = true
@@ -80,6 +75,8 @@ class Enemy
   end
 
   def draw
-    Gosu.draw_rect(@pos[0], @pos[1], @size, @size, Gosu::Color.argb(0xff_ffffff), z = 0) if @pos
+    return unless @pos
+    Gosu.draw_rect(@pos[0], @pos[1], @size, @size, Gosu::Color.argb(0xff_ffffff), z = 0)
+    Gosu.draw_rect(@pos[0], @pos[1]-8, @size*(1.0-((@start_health-@health)/@start_health)), @size-8, Gosu::Color.argb(0xff_ffffff), z = 0)
   end
 end
