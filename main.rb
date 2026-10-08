@@ -13,6 +13,7 @@ class Window < Gosu::Window
 
     @enemies = []
     @turrets = []
+    @buildings = []
     
     @prev_value = Gosu.milliseconds
     @dt = 0.0
@@ -28,26 +29,30 @@ class Window < Gosu::Window
 
     waves
 
-    @enemies.each{|enemy|enemy.alive ? enemy.update(@dt) : @enemies.delete(enemy)} # ta bort döda
+    @enemies.each{|enemy|enemy.update(@dt, @buildings)}
+    @enemies.reject!{|enemy|!enemy.alive} # ta bort döda
     @turrets.each{|turret|turret.update(@dt, @enemies)} #skicka in enenmies för track closest
-
-    def button_down(id)
-      if id == Gosu::MS_LEFT
-        pos = snap(mouse_x, mouse_y) #spän till grid
-        return if @turrets.any? {|t|t.pos==pos} # säg nej till flera på samma ställe
-
-        turret = Turret.new(10)
-        turret.pos = pos
-        @turrets << turret
-      end
-    end
+    @turrets.reject!{|turret|!turret.alive}
 
   end
   
+  def button_down(id)
+    if id == Gosu::MS_LEFT
+      pos = snap(mouse_x, mouse_y) #spän till grid
+      return if @turrets.any? {|t|t.pos==pos} # säg nej till flera på samma ställe
+      
+      turret = Turret.new(50.0)
+      turret.pos = pos
+      @turrets << turret
+      @buildings << turret
+    end
+  end
+
   def waves
     @spawn_time += @dt
     if @spawn_time >= 1.0
-      @enemies << Enemy.new(100.0, "dynamic")
+      enemy = Enemy.new(100.0, "dynamic")
+      @enemies << enemy
       @spawn_time -= 1.0
     end
   end

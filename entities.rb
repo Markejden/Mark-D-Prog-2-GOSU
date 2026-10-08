@@ -1,32 +1,52 @@
-class Building
-  attr_reader :health
-  attr_accessor :pos
-  def initialize(health)
-    @health = health #todo
-    @pos = nil
+module Targeting
+  def closest_to(mid, target)
+    target.min_by{|x|(x.pos[0]-mid[0])**2 + (x.pos[1] - mid[1])**2}
   end
 end
 
-class Turret < Building
+class Entity
+  attr_reader :alive, :start_health
+  attr_accessor :pos, :health
+  def initialize(health)
+    @health = health #todo
+    @start_health = health
+    @pos = nil
+    @alive = true
+  end
+
+  def update
+    @alive = false if @health <= 0
+  end
+end
+
+class Turret < Entity
+  include Targeting
   attr_accessor :aim_range
   def initialize(health)
-    @turretsprite = Gosu::Image.new("resources/topdownturret.png") #https://toppng.com/free-image/turrets-top-down-turret-PNG-free-PNG-Images_188356
+    @turret_sprite = Gosu::Image.new("resources/topdownturret.png") #https://toppng.com/free-image/turrets-top-down-turret-PNG-free-PNG-Images_188356
     @aim_range = 100
-    @turretangle = 0
+    @turret_angle = 0
+    @turret_spin_speed = 6
+    @damage = 80.0
     super(health)
   end
 
   def update(dt, enemies)
-    unless enemies.empty?
-      closest_enemy = track_closest(enemies)
-      return if sqrt((closest_enemy.pos[0] - @pos[0])**2  + (closest_enemy.pos[1] - @pos[1])**2) > @aim_range
-      @turretangle = Gosu.angle(@pos[0], @pos[1], closest_enemy.pos[0], closest_enemy.pos[1])
-      closest_enemy.health -= 1
-    end
+    super()
+    return if enemies.empty?
+    closest_enemy = closest_to(@pos, enemies)
+
+    return unless closest_enemy
+    return unless sqrt((closest_enemy.pos[0] - @pos[0])**2  + (closest_enemy.pos[1] - @pos[1])**2) < @aim_range
+    target_angle = Gosu.angle(@pos[0], @pos[1], closest_enemy.pos[0], closest_enemy.pos[1])
+    close_turn = Gosu.angle_diff(@turret_angle,target_angle)
+
+    @turret_angle += close_turn.clamp(-@turret_spin_speed, @turret_spin_speed)
+    closest_enemy.health -= @damage * dt
   end
 
   def track_closest(enemies)
-    closest = enemies.reduce do |ack,enemy|
+    enemies.reduce do |ack,enemy|
       pos = enemy.pos
       dist = sqrt((pos[0] - @pos[0])**2  + (pos[1] - @pos[1])**2)
       sqrt((ack.pos[0] - @pos[0])**2  + (ack.pos[1] - @pos[1])**2) > dist ? ack = enemy : ack
@@ -34,40 +54,40 @@ class Turret < Building
   end
 
   def draw
-    @turretsprite.draw_rot(@pos[0],@pos[1],1,@turretangle, 0.5, 0.5, TILE.to_f/100, TILE.to_f/100) #sista fyra är midx,midy,sizex,sizey
+    @turret_sprite.draw_rot(@pos[0],@pos[1],1,@turret_angle, 0.5, 0.5, TILE.to_f/100, TILE.to_f/100) #sista fyra är midx,midy,sizex,sizey
   end
 end
 
-class Enemy
-  attr_reader :type, :alive, :size, :speed
-  attr_accessor :pos, :health
+class Enemy < Entity
+  include Targeting
+  attr_reader :type, :alive, :speed
+  attr_accessor :pos, :health, :size
 
   def initialize(health,type)
-    @health = health #todo
-    @start_health = health
     @type = type #todo
     @size = 10.0
-    @pos = nil
     @speed = 50
-    @alive = true
+    @damage = 50
+    super(health)
   end
 
-  def update(dt)
-    if @health <= 0
-      @alive = !@alive
-    end
+  def update(dt, buildings)
+    super()
     @pos ||= [rand(0...MIDDLE[0]*2),rand(0...MIDDLE[1]*2)] # om tom
-    aim_for(MIDDLE[0],MIDDLE[1], dt)
+
+    target = closest_to(@pos,buildings.select(&:alive))
+    tx, ty = target ? target.pos : MIDDLE
+    aim_for(tx, ty, dt, target)
   end
 
-  def aim_for(tx,ty,dt)
+  def aim_for(tx,ty,dt,target=nil)
     dx = (tx - @pos[0]) #distans till target i xy led
     dy = (ty - @pos[1])
     dist = sqrt(dx**2 + dy**2) #hypotenusan av xy led
     if dist <= @speed * dt
-      #@pos[0] = tx
-      #@pos[1] = ty
-      @alive = !@alive
+      @pos[0] = tx
+      @pos[1] = ty
+      target.health -= @damage * dt if target
     else
       @pos[0] += (dx / dist) * @speed * dt
       @pos[1] += (dy / dist) * @speed * dt
@@ -76,7 +96,8 @@ class Enemy
 
   def draw
     return unless @pos
-    Gosu.draw_rect(@pos[0], @pos[1], @size, @size, Gosu::Color.argb(0xff_ffffff), z = 0)
-    Gosu.draw_rect(@pos[0], @pos[1]-8, @size*(1.0-((@start_health-@health)/@start_health)), @size-8, Gosu::Color.argb(0xff_ffffff), z = 0)
+    Gosu.draw_rect(@pos[0]-@size/2, @pos[1]-@size/2, @size, @size, Gosu::Color.argb(0xff_ffffff), 0)
+    ratio = [@health / @start_health.to_f, 0].max #clamp till över eller lika med 0
+    Gosu.draw_rect(@pos[0]-@size/2, @pos[1] - ((@size/5)*4)-@size/2, @size * ratio, @size - ((@size/5)*4), Gosu::Color.argb(0xff_ff0000), 0)
   end
 end
