@@ -8,13 +8,13 @@ class Entity
   attr_reader :alive, :start_health
   attr_accessor :pos, :health
   def initialize(health)
-    @health = health #todo
+    @health = health
     @start_health = health
     @pos = nil
     @alive = true
   end
 
-  def update
+  def update(dt,enemies)
     @alive = false if @health <= 0
   end
 end
@@ -23,16 +23,16 @@ class Turret < Entity
   include Targeting
   attr_accessor :aim_range
   def initialize(health)
-    @turret_sprite = Gosu::Image.new("resources/topdownturret.png") #https://toppng.com/free-image/turrets-top-down-turret-PNG-free-PNG-Images_188356
+    @sprite = Gosu::Image.new("resources/topdownturret.png") #https://toppng.com/free-image/turrets-top-down-turret-PNG-free-PNG-Images_188356
     @aim_range = 100
     @turret_angle = 0
     @turret_spin_speed = 6
     @damage = 80.0
-    super(health)
+    super
   end
 
   def update(dt, enemies)
-    super()
+    super
     return if enemies.empty?
     closest_enemy = closest_to(@pos, enemies)
 
@@ -42,20 +42,23 @@ class Turret < Entity
     close_turn = Gosu.angle_diff(@turret_angle,target_angle)
 
     @turret_angle += close_turn.clamp(-@turret_spin_speed, @turret_spin_speed)
-    closest_enemy.health -= @damage * dt
-  end
-
-  def track_closest(enemies)
-    enemies.reduce do |ack,enemy|
-      pos = enemy.pos
-      dist = sqrt((pos[0] - @pos[0])**2  + (pos[1] - @pos[1])**2)
-      sqrt((ack.pos[0] - @pos[0])**2  + (ack.pos[1] - @pos[1])**2) > dist ? ack = enemy : ack
-    end
+    closest_enemy.health -= @damage * dt if close_turn.abs < 5
   end
 
   def draw
-    @turret_sprite.draw_rot(@pos[0],@pos[1],1,@turret_angle, 0.5, 0.5, TILE.to_f/100, TILE.to_f/100) #sista fyra är midx,midy,sizex,sizey
+    @sprite.draw_rot(@pos[0],@pos[1],1,@turret_angle, 0.5, 0.5, TILE.to_f/100, TILE.to_f/100) #sista fyra är midx,midy,sizex,sizey
   end
+end
+
+class Wall < Entity
+    def initialize(health)
+      @sprite = nil #todo
+      super
+    end
+
+    def draw
+      Gosu.draw_rect(@pos[0] - TILE/2, @pos[1]- TILE/2, TILE, TILE, Gosu::Color.argb(0xff_ffffff), 0)
+    end
 end
 
 class Enemy < Entity
@@ -64,7 +67,7 @@ class Enemy < Entity
   attr_accessor :pos, :health, :size
 
   def initialize(health,type)
-    @type = type #todo
+    @type = type
     @size = 10.0
     @speed = 50
     @damage = 50
@@ -72,7 +75,7 @@ class Enemy < Entity
   end
 
   def update(dt, buildings)
-    super()
+    super
     @pos ||= [rand(0...MIDDLE[0]*2),rand(0...MIDDLE[1]*2)] # om tom
 
     target = closest_to(@pos,buildings.select(&:alive))

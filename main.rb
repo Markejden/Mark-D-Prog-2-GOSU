@@ -4,6 +4,9 @@ include Math
 #include Gosu , kan användas men har den inte för att göra det mer tydligt
 
 MIDDLE = [320*2, 240*2]
+TOWER_OPT = {
+  Turret =>{health: 50.0 },
+  Wall=>{health: 200.0 }}
 TILE = 16
 
 class Window < Gosu::Window
@@ -12,8 +15,8 @@ class Window < Gosu::Window
     self.caption = "Game"
 
     @enemies = []
-    @turrets = []
     @buildings = []
+    @selected_building = Turret
     
     @prev_value = Gosu.milliseconds
     @dt = 0.0
@@ -31,21 +34,26 @@ class Window < Gosu::Window
 
     @enemies.each{|enemy|enemy.update(@dt, @buildings)}
     @enemies.reject!{|enemy|!enemy.alive} # ta bort döda
-    @turrets.each{|turret|turret.update(@dt, @enemies)} #skicka in enenmies för track closest
-    @turrets.reject!{|turret|!turret.alive}
+    @buildings.each{|building|building.update(@dt, @enemies)} #skicka in enenmies för track closest
+    @buildings.reject!{|building|!building.alive}
 
   end
   
   def button_down(id)
-    if id == Gosu::MS_LEFT
-      pos = snap(mouse_x, mouse_y) #spän till grid
-      return if @turrets.any? {|t|t.pos==pos} # säg nej till flera på samma ställe
-      
-      turret = Turret.new(50.0)
-      turret.pos = pos
-      @turrets << turret
-      @buildings << turret
+    case id
+      when Gosu::KB_1 then @selected_building = Turret
+      when Gosu::KB_2 then @selected_building = Wall
+      when Gosu::MS_LEFT then place_building
     end
+  end
+
+  def place_building
+    pos = snap(mouse_x, mouse_y) #spän till grid
+    return if @buildings.any? {|t|t.pos==pos} # säg nej till flera på samma ställe
+    
+    building = @selected_building.new(TOWER_OPT[@selected_building][:health])
+    building.pos = pos
+    @buildings << building
   end
 
   def waves
@@ -63,7 +71,7 @@ class Window < Gosu::Window
 
   def draw
     @enemies.each(&:draw)
-    @turrets.each(&:draw)
+    @buildings.each(&:draw)
     grid
   end
 
