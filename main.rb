@@ -4,7 +4,7 @@ include Math
 #include Gosu , kan användas men har den inte för att göra det mer tydligt
 
 MIDDLE = [320*2, 240*2]
-TILE = 32
+TILE = 16
 
 class Window < Gosu::Window
   def initialize
@@ -47,7 +47,7 @@ class Window < Gosu::Window
   def waves
     @spawn_time += @dt
     if @spawn_time >= 1.0
-      @enemies << Enemy.new(10, "dynamic")
+      @enemies << Enemy.new(100, "dynamic")
       @spawn_time -= 1.0
     end
   end
@@ -63,7 +63,7 @@ class Window < Gosu::Window
   end
 
   def grid #måla gridlinjer
-    color = Gosu::Color.argb(0x08_ffffff)
+    color = Gosu::Color.argb(0x20_ffffff)
     (width/TILE + 1).times do |i|
       x=i*TILE
       Gosu.draw_line(x, 0, color, x, height, color, 0)

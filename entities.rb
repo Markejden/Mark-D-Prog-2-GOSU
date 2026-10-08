@@ -17,25 +17,36 @@ class Turret < Building
   end
 
   def update(dt, enemies)
-    track_closest(enemies.map(&:pos))
+    unless enemies.empty?
+      closest_enemy = track_closest(enemies)
+      return if sqrt((closest_enemy.pos[0] - @pos[0])**2  + (closest_enemy.pos[1] - @pos[1])**2) > 100
+      @turretangle = Gosu.angle(@pos[0], @pos[1], closest_enemy.pos[0], closest_enemy.pos[1])
+      closest_enemy.health -= 1
+    end
   end
 
-  def track_closest(positions)
-    closest = positions.compact.min_by {|x,y|sqrt((x - @pos[0])**2 + (y - @pos[1])**2)} #compact för att göra 2d array till 1d och min_by tar minsta i detta fall med par
-    return unless closest
-    dist = sqrt((closest[0] - @pos[0])**2 + (closest[1] - @pos[1])**2)
-    return if dist > @aim_range
-    @turretangle = Gosu.angle(@pos[0], @pos[1], closest[0], closest[1])
+  def track_closest(enemies)
+    closest = enemies.reduce do |ack,enemy|
+      pos = enemy.pos
+      dist = sqrt((pos[0] - @pos[0])**2  + (pos[1] - @pos[1])**2)
+      sqrt((ack.pos[0] - @pos[0])**2  + (ack.pos[1] - @pos[1])**2) > dist ? ack = enemy : ack
+    end
+    #positions = enemies.map(&:pos)
+    #closest = positions.compact.min_by {|x,y|sqrt((x - @pos[0])**2 + (y - @pos[1])**2)} #compact för att göra 2d array till 1d och min_by tar minsta i detta fall med par
+    #return unless closest
+    #dist = sqrt((closest[0] - @pos[0])**2 + (closest[1] - @pos[1])**2)
+    #return if dist > @aim_range
+    #@turretangle = Gosu.angle(@pos[0], @pos[1], closest[0], closest[1])
   end
 
   def draw
-    @turretsprite.draw_rot(@pos[0],@pos[1],1,@turretangle, 0.5, 0.5, 0.4, 0.4) #sista fyra är midx,midy,sizex,sizey
+    @turretsprite.draw_rot(@pos[0],@pos[1],1,@turretangle, 0.5, 0.5, TILE.to_f/100, TILE.to_f/100) #sista fyra är midx,midy,sizex,sizey
   end
 end
 
 class Enemy
-  attr_reader :health, :type, :alive, :size, :speed
-  attr_accessor :pos
+  attr_reader :type, :alive, :size, :speed
+  attr_accessor :pos, :health
 
   def initialize(health,type)
     @health = health #todo
@@ -47,7 +58,10 @@ class Enemy
   end
 
   def update(dt)
-    @pos ||= [rand(0...640),rand(0...480)] # om tom
+    if @health <= 0
+      @alive = !@alive
+    end
+    @pos ||= [rand(0...MIDDLE[0]*2),rand(0...MIDDLE[1]*2)] # om tom
     aim_for(MIDDLE[0],MIDDLE[1], dt)
   end
 
