@@ -33,14 +33,16 @@ class Turret < Entity
 
   def update(dt, enemies)
     super
+    enemy_tracking(dt, enemies)
+  end
+
+  def enemy_tracking(dt, enemies)
     return if enemies.empty?
     closest_enemy = closest_to(@pos, enemies)
-
     return unless closest_enemy
     return unless sqrt((closest_enemy.pos[0] - @pos[0])**2  + (closest_enemy.pos[1] - @pos[1])**2) < @aim_range
     target_angle = Gosu.angle(@pos[0], @pos[1], closest_enemy.pos[0], closest_enemy.pos[1])
     close_turn = Gosu.angle_diff(@turret_angle,target_angle)
-
     @turret_angle += close_turn.clamp(-@turret_spin_speed, @turret_spin_speed)
     closest_enemy.health -= @damage * dt if close_turn.abs < 5
   end
@@ -51,14 +53,14 @@ class Turret < Entity
 end
 
 class Wall < Entity
-    def initialize(health)
-      @sprite = nil #todo
-      super
-    end
+  def initialize(health)
+    @sprite = nil #todo
+    super
+  end
 
-    def draw
-      Gosu.draw_rect(@pos[0] - TILE/2, @pos[1]- TILE/2, TILE, TILE, Gosu::Color.argb(0xff_ffffff), 0)
-    end
+  def draw
+    Gosu.draw_rect(@pos[0] - TILE/2, @pos[1]- TILE/2, TILE, TILE, Gosu::Color.argb(0xff_ffffff), 0)
+  end
 end
 
 class Enemy < Entity

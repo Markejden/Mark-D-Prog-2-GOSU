@@ -4,12 +4,13 @@ include Math
 #include Gosu , kan användas men har den inte för att göra det mer tydligt
 
 MIDDLE = [320*2, 240*2]
-TOWER_OPT = {
-  Turret =>{health: 50.0 },
-  Wall=>{health: 200.0 }}
 TILE = 16
 
 class Window < Gosu::Window
+  TOWER_OPT = {
+  Turret =>{health: 50.0 },
+  Wall=>{health: 200.0 }}
+
   def initialize
     super MIDDLE[0]*2 , MIDDLE[1]*2
     self.caption = "Game"
@@ -17,6 +18,7 @@ class Window < Gosu::Window
     @enemies = []
     @buildings = []
     @selected_building = Turret
+    @grid = {}
     
     @prev_value = Gosu.milliseconds
     @dt = 0.0
@@ -52,6 +54,7 @@ class Window < Gosu::Window
     return if @buildings.any? {|t|t.pos==pos} # säg nej till flera på samma ställe
     
     building = @selected_building.new(TOWER_OPT[@selected_building][:health])
+
     building.pos = pos
     @buildings << building
   end
