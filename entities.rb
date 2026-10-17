@@ -1,12 +1,8 @@
-module Targeting
-  def closest_to(mid, target)
-    target.min_by{|x|(x.pos[0]-mid[0])**2 + (x.pos[1] - mid[1])**2}
-  end
-end
+require_relative 'modules'
 
 class Entity
-  attr_reader :alive, :start_health
-  attr_accessor :pos, :health
+  include Timedt
+  attr_reader :alive, :start_health, :health, :pos
   def initialize(health)
     @health = health
     @start_health = health
@@ -14,14 +10,22 @@ class Entity
     @alive = true
   end
 
-  def update(dt,enemies)
+  def change_health(hpdiff)
+    @health += hpdiff * dt
+  end
+
+  def change_pos(pos)
+    @pos = pos
+  end
+
+  def update(enemies)
     @alive = false if @health <= 0
   end
 end
 
-class Turret < Entity
+class BaseTurret < Entity
   include Targeting
-  attr_accessor :aim_range
+  attr_reader :aim_range
   def initialize(health)
     @sprite = Gosu::Image.new("resources/topdownturret.png") #https://toppng.com/free-image/turrets-top-down-turret-PNG-free-PNG-Images_188356
     @aim_range = 100
@@ -31,20 +35,22 @@ class Turret < Entity
     super
   end
 
-  def update(dt, enemies)
+  def update(enemies)
     super
-    enemy_tracking(dt, enemies)
+    enemy_tracking(enemies)
   end
 
-  def enemy_tracking(dt, enemies)
+  def enemy_tracking(enemies)
     return if enemies.empty?
     closest_enemy = closest_to(@pos, enemies)
     return unless closest_enemy
-    return unless sqrt((closest_enemy.pos[0] - @pos[0])**2  + (closest_enemy.pos[1] - @pos[1])**2) < @aim_range
+
+    return unless Gosu.distance(@pos[0], @pos[1], closest_enemy.pos[0], closest_enemy.pos[1]) < @aim_range
+
     target_angle = Gosu.angle(@pos[0], @pos[1], closest_enemy.pos[0], closest_enemy.pos[1])
     close_turn = Gosu.angle_diff(@turret_angle,target_angle)
     @turret_angle += close_turn.clamp(-@turret_spin_speed, @turret_spin_speed)
-    closest_enemy.health -= @damage * dt if close_turn.abs < 5
+    closest_enemy.change_health(-@damage) if close_turn.abs < 5
   end
 
   def draw
@@ -63,10 +69,9 @@ class Wall < Entity
   end
 end
 
-class Enemy < Entity
+class BaseEnemy < Entity
   include Targeting
-  attr_reader :type, :alive, :speed
-  attr_accessor :pos, :health, :size
+  attr_reader :type, :alive, :speed, :health, :size, :pos
 
   def initialize(health,type)
     @type = type
@@ -76,26 +81,26 @@ class Enemy < Entity
     super(health)
   end
 
-  def update(dt, buildings)
+  def update(buildings)
     super
     @pos ||= [rand(0...MIDDLE[0]*2),rand(0...MIDDLE[1]*2)] # om tom
 
     target = closest_to(@pos,buildings.select(&:alive))
     tx, ty = target ? target.pos : MIDDLE
-    aim_for(tx, ty, dt, target)
+    aim_for(tx, ty, target)
   end
 
-  def aim_for(tx,ty,dt,target=nil)
-    dx = (tx - @pos[0]) #distans till target i xy led
-    dy = (ty - @pos[1])
-    dist = sqrt(dx**2 + dy**2) #hypotenusan av xy led
-    if dist <= @speed * dt
+  def aim_for(tx,ty,target=nil)
+    speed = @speed * dt
+
+    if Gosu.distance(@pos[0], @pos[1], tx, ty) <= speed
       @pos[0] = tx
       @pos[1] = ty
-      target.health -= @damage * dt if target
+      target.change_health(-@damage) if target
     else
-      @pos[0] += (dx / dist) * @speed * dt
-      @pos[1] += (dy / dist) * @speed * dt
+      angle = Gosu.angle(@pos[0], @pos[1], tx, ty)
+      @pos[0] += Gosu.offset_x(angle,speed)
+      @pos[1] += Gosu.offset_y(angle,speed)
     end
   end
 

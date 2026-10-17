@@ -1,68 +1,85 @@
 require 'gosu'
 require_relative 'entities'
-include Math
-#include Gosu , kan användas men har den inte för att göra det mer tydligt
+require_relative 'modules'
 
 MIDDLE = [320*2, 240*2]
 TILE = 16
 
 class Window < Gosu::Window
+  include Timedt
   TOWER_OPT = {
-  Turret =>{health: 50.0 },
+  BaseTurret =>{health: 50.0 },
   Wall=>{health: 200.0 }}
 
   def initialize
     super MIDDLE[0]*2 , MIDDLE[1]*2
+    Clock.reset
+
     self.caption = "Game"
 
     @enemies = []
     @buildings = []
-    @selected_building = Turret
+    @selected_building = BaseTurret
     @grid = {}
     
     @prev_value = Gosu.milliseconds
-    @dt = 0.0
     @spawn_time = 0.0
-
+    @prev_mouse = nil
   end
 
   def update
-    time = Gosu.milliseconds
-    @dt = (time - @prev_value) / 1000.0 #deltatid
-    @prev_value = time
-    #OBS! alla speed variabler ska gångras med dt
+    Clock.tick
 
     waves
+    camera_shift
 
-    @enemies.each{|enemy|enemy.update(@dt, @buildings)}
+    @enemies.each{|enemy|enemy.update(@buildings)}
     @enemies.reject!{|enemy|!enemy.alive} # ta bort döda
-    @buildings.each{|building|building.update(@dt, @enemies)} #skicka in enenmies för track closest
+    @buildings.each{|building|building.update(@enemies)} #skicka in enenmies för track closest
     @buildings.reject!{|building|!building.alive}
-
   end
   
   def button_down(id)
     case id
-      when Gosu::KB_1 then @selected_building = Turret
+      when Gosu::KB_1 then @selected_building = BaseTurret
       when Gosu::KB_2 then @selected_building = Wall
       when Gosu::MS_LEFT then place_building
+      when Gosu::MS_WHEEL_UP   then Camera.zoom_to(mouse_x, mouse_y, 1.1)
+      when Gosu::MS_WHEEL_DOWN then Camera.zoom_to(mouse_x, mouse_y, 0.9)
+    end
+  end
+
+  def camera_shift
+    if Gosu.button_down? Gosu::MS_RIGHT
+      if @prev_mouse
+        Camera.x -= (mouse_x-@prev_mouse[0])/Camera.zoom
+        Camera.y -= (mouse_y-@prev_mouse[1])/Camera.zoom 
+      end
+      @prev_mouse = [mouse_x, mouse_y]
+    else
+      @prev_mouse = nil
     end
   end
 
   def place_building
-    pos = snap(mouse_x, mouse_y) #spän till grid
+    pos = snap(*Camera.trans_worldpos(mouse_x, mouse_y)) #spän till grid
+    # * här är en splat operator, dom är sjukt användbara
+    #för calling, flattening, rester och collecting 
+    #info på * och fler som typ & finns på https://www.ruby-lang.org/en/documentation/faq/4/
+    #och https://docs.ruby-lang.org/en/4.0/syntax/calling_methods_rdoc.html
+    
     return if @buildings.any? {|t|t.pos==pos} # säg nej till flera på samma ställe
     
     building = @selected_building.new(TOWER_OPT[@selected_building][:health])
 
-    building.pos = pos
+    building.change_pos(pos)
     @buildings << building
   end
 
   def waves
-    @spawn_time += @dt
+    @spawn_time += dt
     if @spawn_time >= 1.0
-      enemy = Enemy.new(100.0, "dynamic")
+      enemy = BaseEnemy.new(100.0, "dynamic")
       @enemies << enemy
       @spawn_time -= 1.0
     end
@@ -73,21 +90,25 @@ class Window < Gosu::Window
   end
 
   def draw
-    @enemies.each(&:draw)
-    @buildings.each(&:draw)
-    grid
+    Camera.shift do 
+      @enemies.each(&:draw)
+      @buildings.each(&:draw)
+      grid
+    end
   end
 
   def grid #måla gridlinjer
     color = Gosu::Color.argb(0x20_ffffff)
-    (width/TILE + 1).times do |i|
-      x=i*TILE
-      Gosu.draw_line(x, 0, color, x, height, color, 0)
+    bright = Camera.x + width / Camera.zoom
+    bottomr = Camera.y + height / Camera.zoom
+    first_x = (Camera.x/TILE).floor*TILE
+    first_y = (Camera.y/TILE).floor*TILE
+    first_x.step(bright, TILE) do |x|
+      Gosu.draw_line(x, Camera.y, color, x, bottomr, color, 0)
     end
 
-    (height/TILE + 1).times do |i|
-      y=i*TILE
-      Gosu.draw_line(0, y, color, width, y, color, 0)
+    first_y.step(bottomr, TILE) do |y|
+      Gosu.draw_line(Camera.x, y, color, bright, y, color, 0)
     end
   end
 end
