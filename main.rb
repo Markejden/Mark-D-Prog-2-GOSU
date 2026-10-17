@@ -59,6 +59,9 @@ class Window < Gosu::Window
     else
       @prev_mouse = nil
     end
+
+    #Camera.x = Camera.x.clamp(-1000,1000)
+    #Camera.y = Camera.y.clamp(-1000,1000)
   end
 
   def place_building
@@ -80,6 +83,7 @@ class Window < Gosu::Window
     @spawn_time += dt
     if @spawn_time >= 1.0
       enemy = BaseEnemy.new(100.0, "dynamic")
+      enemy.spawnpos
       @enemies << enemy
       @spawn_time -= 1.0
     end

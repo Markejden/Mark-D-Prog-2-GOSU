@@ -21,6 +21,12 @@ class Entity
   def update(enemies)
     @alive = false if @health <= 0
   end
+
+  def exists?
+    res = true
+    res = false unless @pos
+    return res
+  end
 end
 
 class BaseTurret < Entity
@@ -44,6 +50,7 @@ class BaseTurret < Entity
     return if enemies.empty?
     closest_enemy = closest_to(@pos, enemies)
     return unless closest_enemy
+    return unless closest_enemy.exists?
 
     return unless Gosu.distance(@pos[0], @pos[1], closest_enemy.pos[0], closest_enemy.pos[1]) < @aim_range
 
@@ -54,6 +61,7 @@ class BaseTurret < Entity
   end
 
   def draw
+    return unless exists?
     @sprite.draw_rot(@pos[0],@pos[1],1,@turret_angle, 0.5, 0.5, TILE.to_f/100, TILE.to_f/100) #sista fyra är midx,midy,sizex,sizey
   end
 end
@@ -65,6 +73,7 @@ class Wall < Entity
   end
 
   def draw
+    return unless exists?
     Gosu.draw_rect(@pos[0] - TILE/2, @pos[1]- TILE/2, TILE, TILE, Gosu::Color.argb(0xff_ffffff), 0)
   end
 end
@@ -83,8 +92,7 @@ class BaseEnemy < Entity
 
   def update(buildings)
     super
-    @pos ||= [rand(0...MIDDLE[0]*2),rand(0...MIDDLE[1]*2)] # om tom
-
+    return unless @pos
     target = closest_to(@pos,buildings.select(&:alive))
     tx, ty = target ? target.pos : MIDDLE
     aim_for(tx, ty, target)
@@ -104,8 +112,12 @@ class BaseEnemy < Entity
     end
   end
 
+  def spawnpos
+    @pos ||= [rand(0...MIDDLE[0]*2),rand(0...MIDDLE[1]*2)] # om tom
+  end
+
   def draw
-    return unless @pos
+    return unless exists?
     Gosu.draw_rect(@pos[0]-@size/2, @pos[1]-@size/2, @size, @size, Gosu::Color.argb(0xff_ffffff), 0)
     ratio = [@health / @start_health.to_f, 0].max #clamp till över eller lika med 0
     Gosu.draw_rect(@pos[0]-@size/2, @pos[1] - ((@size/5)*4)-@size/2, @size * ratio, @size - ((@size/5)*4), Gosu::Color.argb(0xff_ff0000), 0)

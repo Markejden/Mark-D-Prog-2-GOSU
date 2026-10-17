@@ -49,7 +49,10 @@ end
 
 module Targeting
   def closest_to(mid, target)
-    target.min_by{|x|(x.pos[0]-mid[0])**2 + (x.pos[1] - mid[1])**2}
+    target.min_by do |x|
+      next unless x.pos
+      (x.pos[0]-mid[0])**2 + (x.pos[1] - mid[1])**2
+    end
   end
 end
 #anledningen till att inte ha self på dessa är för att skydda namespace för
