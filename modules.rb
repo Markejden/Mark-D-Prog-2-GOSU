@@ -50,7 +50,7 @@ end
 module Targeting
   def closest_to(mid, target)
     target.min_by do |x|
-      next unless x.pos
+      next unless x.exists?
       (x.pos[0]-mid[0])**2 + (x.pos[1] - mid[1])**2
     end
   end
@@ -61,4 +61,16 @@ end
 #mellan alla filer och funktioner medan så som dessa bara behöver en privat instans
 module Timedt
     def dt = Clock.dt
+end
+
+class ScoreManager
+  attr_reader :score
+
+  def initialize
+    @score = 0
+  end
+
+  def entity_died(entity)
+    @score += 10 if entity.is_a?(BaseEnemy)
+  end
 end

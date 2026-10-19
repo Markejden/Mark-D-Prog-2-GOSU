@@ -2,6 +2,7 @@ require_relative 'modules'
 
 class Entity
   include Timedt
+  include Wisper::Publisher
   attr_reader :alive, :start_health, :health, :pos
   def initialize(health)
     @health = health
@@ -11,7 +12,19 @@ class Entity
   end
 
   def change_health(hpdiff)
-    @health += hpdiff * dt
+    return unless @alive
+
+    old_health = @health
+    @health = (@health + hpdiff).clamp(0, @start_health)
+
+    if @health != old_health
+      broadcast(:entity_damaged, self, old_health - @health)
+    end
+
+    if @health <= 0
+      @alive = false
+      broadcast(:entity_died, self)
+    end
   end
 
   def change_pos(pos)
@@ -23,9 +36,7 @@ class Entity
   end
 
   def exists?
-    res = true
-    res = false unless @pos
-    return res
+    !@pos.nil?
   end
 end
 
@@ -38,12 +49,19 @@ class BaseTurret < Entity
     @turret_angle = 0
     @turret_spin_speed = 6
     @damage = 80.0
+    @reload_time = 1.0
     super
   end
 
   def update(enemies)
     super
+    @reload_time -= dt
     enemy_tracking(enemies)
+  end
+
+  def able_to_fire(condition)
+    return false unless condition == true
+    return @reload_time <= 0 ? true : false
   end
 
   def enemy_tracking(enemies)
@@ -57,7 +75,11 @@ class BaseTurret < Entity
     target_angle = Gosu.angle(@pos[0], @pos[1], closest_enemy.pos[0], closest_enemy.pos[1])
     close_turn = Gosu.angle_diff(@turret_angle,target_angle)
     @turret_angle += close_turn.clamp(-@turret_spin_speed, @turret_spin_speed)
-    closest_enemy.change_health(-@damage) if close_turn.abs < 5
+
+    return unless able_to_fire(close_turn.abs < 5)
+    
+    @reload_time = 1.0
+    closest_enemy.change_health(-@damage)
   end
 
   def draw
@@ -104,7 +126,7 @@ class BaseEnemy < Entity
     if Gosu.distance(@pos[0], @pos[1], tx, ty) <= speed
       @pos[0] = tx
       @pos[1] = ty
-      target.change_health(-@damage) if target
+      target.change_health(-@damage * dt) if target
     else
       angle = Gosu.angle(@pos[0], @pos[1], tx, ty)
       @pos[0] += Gosu.offset_x(angle,speed)
