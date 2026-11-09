@@ -74,3 +74,10 @@ class ScoreManager
     @score += 10 if entity.is_a?(BaseEnemy)
   end
 end
+
+module Common
+  extend self
+  def snap(x, y)
+    [(x/TILE).floor * TILE + TILE/2, (y/TILE).floor * TILE + TILE/2]
+  end
+end

@@ -18,7 +18,7 @@ class Entity
     @health = (@health + hpdiff).clamp(0, @start_health)
 
     if @health != old_health
-      broadcast(:entity_damaged, self, old_health - @health)
+      broadcast(:entity_damaged, self, hpdiff)
     end
 
     if @health <= 0
