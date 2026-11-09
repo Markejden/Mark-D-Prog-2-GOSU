@@ -36,7 +36,7 @@ class World_instance
 
     def entity_update
         @enemies.each{|enemy|enemy.update(@buildings)}
-        @enemies.reject!{|enemy|!enemy.alive} # ta bort döda
+        @enemies.reject!{|enemy|!enemy.alive && !enemy.exists?} # ta bort döda
         @buildings.each{|building|building.update(@enemies)} #skicka in enenmies för track closest
         @buildings.reject!{|building|!building.alive}
     end
@@ -71,7 +71,7 @@ class World_instance
     def waves
         @spawn_time += dt
         if @spawn_time >= 1.0
-            enemy = BaseEnemy.new(100.0, "dynamic")
+            enemy = BaseEnemy.new(100.0)
 
             enemy.subscribe(self)
             enemy.spawnpos

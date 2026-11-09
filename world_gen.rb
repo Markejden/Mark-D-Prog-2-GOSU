@@ -23,5 +23,6 @@ def generate_world(seed,width,height,ore_density,ore_rich)
         node_pos[new_pos] = "Ore"
     end
 
+    p node_pos
     return node_pos
 end

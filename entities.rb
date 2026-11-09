@@ -35,9 +35,9 @@ class Entity
     @alive = false if @health <= 0
   end
 
-  def exists?
-    !@pos.nil?
-  end
+  def exists? = !@pos.nil?
+
+  def alive? = @alive
 end
 
 class BaseTurret < Entity
@@ -50,6 +50,7 @@ class BaseTurret < Entity
     @turret_spin_speed = 6
     @damage = 80.0
     @reload_time = 1.0
+    @aim_spread = 5
     super
   end
 
@@ -59,9 +60,11 @@ class BaseTurret < Entity
     enemy_tracking(enemies)
   end
 
-  def able_to_fire(condition)
-    return false unless condition == true
-    return @reload_time <= 0 ? true : false
+  def turret_fire(angle, closest_enemy)
+    return unless angle.abs < @aim_spread
+    return unless @reload_time <= 0
+    @reload_time = 1.0
+    closest_enemy.change_health(-@damage)
   end
 
   def enemy_tracking(enemies)
@@ -69,17 +72,18 @@ class BaseTurret < Entity
     closest_enemy = closest_to(@pos, enemies)
     return unless closest_enemy
     return unless closest_enemy.exists?
+    return unless closest_enemy.alive?
 
     return unless Gosu.distance(@pos[0], @pos[1], closest_enemy.pos[0], closest_enemy.pos[1]) < @aim_range
 
     target_angle = Gosu.angle(@pos[0], @pos[1], closest_enemy.pos[0], closest_enemy.pos[1])
     close_turn = Gosu.angle_diff(@turret_angle,target_angle)
+
     @turret_angle += close_turn.clamp(-@turret_spin_speed, @turret_spin_speed)
 
     return unless able_to_fire(close_turn.abs < 5)
     
-    @reload_time = 1.0
-    closest_enemy.change_health(-@damage)
+    turret_fire(close_turn, closest_enemy)
   end
 
   def draw
@@ -102,10 +106,9 @@ end
 
 class BaseEnemy < Entity
   include Targeting
-  attr_reader :type, :alive, :speed, :health, :size, :pos
+  attr_reader :alive, :speed, :health, :size, :pos
 
-  def initialize(health,type)
-    @type = type
+  def initialize(health)
     @size = 10.0
     @speed = 50
     @damage = 50
