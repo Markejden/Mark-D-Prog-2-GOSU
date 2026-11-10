@@ -10,7 +10,7 @@ def generate_world(seed,width,height,ore_density,ore_rich)
     ore_amount -= nodes
 
     nodes.times do |i|
-        node_pos[[rng.rand(-half_w...half_w),rng.rand(-half_h..half_h)]] = "MasterOre" #tre punkter på rangen för exclusive
+        node_pos[[rng.rand(-half_w...half_w),rng.rand(-half_h...half_h)]] = "MasterOre" #tre punkter på rangen för exclusive
     end
 
     ore_amount.times do |i|
