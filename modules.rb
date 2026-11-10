@@ -49,8 +49,7 @@ end
 
 module Targeting
   def closest_to(mid, target)
-    target.min_by do |x|
-      next unless x.exists?
+    target.select{|x| x.alive? && x.exists?}.min_by do |x|
       (x.pos[0]-mid[0])**2 + (x.pos[1] - mid[1])**2
     end
   end

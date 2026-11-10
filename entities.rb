@@ -24,6 +24,7 @@ class Entity
     if @health <= 0
       @alive = false
       broadcast(:entity_died, self)
+      @pos = nil
     end
   end
 
@@ -56,6 +57,7 @@ class BaseTurret < Entity
 
   def update(enemies)
     super
+    return unless exists? && alive?
     @reload_time -= dt
     enemy_tracking(enemies)
   end
@@ -80,8 +82,6 @@ class BaseTurret < Entity
     close_turn = Gosu.angle_diff(@turret_angle,target_angle)
 
     @turret_angle += close_turn.clamp(-@turret_spin_speed, @turret_spin_speed)
-
-    return unless able_to_fire(close_turn.abs < 5)
     
     turret_fire(close_turn, closest_enemy)
   end
@@ -144,6 +144,7 @@ class BaseEnemy < Entity
   def draw
     return unless exists?
     Gosu.draw_rect(@pos[0]-@size/2, @pos[1]-@size/2, @size, @size, Gosu::Color.argb(0xff_ffffff), 0)
+    return unless Camera.zoom > 1.5
     ratio = [@health / @start_health.to_f, 0].max #clamp till över eller lika med 0
     Gosu.draw_rect(@pos[0]-@size/2, @pos[1] - ((@size/5)*4)-@size/2, @size * ratio, @size - ((@size/5)*4), Gosu::Color.argb(0xff_ff0000), 0)
   end

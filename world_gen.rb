@@ -1,6 +1,7 @@
 def generate_world(seed,width,height,ore_density,ore_rich)
     pos = [[0,1],[1,0],[-1,0],[0,-1]]
     node_pos = {}
+    node_pos_A = []
 
     rng = Random.new(seed)
     ore_amount = (width*height*ore_density).ceil
@@ -17,12 +18,16 @@ def generate_world(seed,width,height,ore_density,ore_rich)
             new_pos = node_pos.to_a.sample(1, random: rng).first.first
             diff = pos.sample(1, random: rng).first
             new_pos = [new_pos[0]+diff[0],new_pos[1]+diff[1]]
-
-            skip = true unless node_pos.to_a.first.include?(new_pos)
+            #p node_pos.to_a.flatten(1).select{|x|x.is_a?(Array)}
+            skip = true unless node_pos_A.include?(new_pos)
         end
+        node_pos_A << new_pos
         node_pos[new_pos] = "Ore"
     end
 
     p node_pos
+    p ore_amount
+    p node_pos.length
+    p node_pos_A.length
     return node_pos
 end

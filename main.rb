@@ -69,7 +69,7 @@ class Window < Gosu::Window
   end
 
   def draw_world
-    @grid.each do |x|
+    @grid.each do |x| # x är en hash och efter .to_a kommer den se ut som [[1,1],"type"] - alltså .first[0] för att nå xpos
       Gosu.draw_rect((x.to_a.first[0] - TILE/2)*TILE, (x.to_a.first[1]- TILE/2)*TILE, TILE, TILE, Gosu::Color.rgba(255, 50, 100, 100), -1)
     end
   end
