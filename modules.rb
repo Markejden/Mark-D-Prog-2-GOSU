@@ -37,13 +37,30 @@ module Camera
 
   def zoom_to(mx, my, amp)
     wx, wy = trans_worldpos(mx, my)
-    @zoom = (@zoom*amp).clamp(0.25,4.0) #gånger för att det inte ska bli ojämnt, clamp för att zoomen inte ska fly världen
+    @zoom = (@zoom*amp).clamp(min_zoom, 4.0) #gånger för att det inte ska bli ojämnt, clamp för att zoomen inte ska fly världen
     @x = wx - mx/@zoom
     @y = wy - my/@zoom
   end
 
   def trans_worldpos(scalex, scaley)
     [scalex/@zoom + @x,scaley/@zoom + @y]
+  end
+
+  def min_zoom
+    [MIDDLE[0]*2/(WORLD_HALF[0]*2), MIDDLE[1]*2/(WORLD_HALF[1]*2)].max
+  end
+
+  def center_on(wx, wy)
+    @x = wx - MIDDLE[0]/@zoom
+    @y = wy - MIDDLE[1]/@zoom
+  end
+
+  def clamp_to(min_x, min_y, max_x, max_y)
+    view_w = MIDDLE[0]*2/@zoom
+    view_h = MIDDLE[1]*2/@zoom
+
+    @x = view_w >= max_x - min_x ? (min_x+max_x - view_w)/2 : @x.clamp(min_x, max_x - view_w)
+    @y = view_h >= max_y - min_y ? (min_y+max_y - view_h)/2 : @y.clamp(min_y, max_y - view_h)
   end
 end
 

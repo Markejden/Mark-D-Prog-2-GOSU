@@ -119,7 +119,7 @@ class BaseEnemy < Entity
     super
     return unless @pos
     target = closest_to(@pos,buildings.select(&:alive))
-    tx, ty = target ? target.pos : MIDDLE
+    tx, ty = target ? target.pos : WORLD_CENTER
     aim_for(tx, ty, target)
   end
 
@@ -138,7 +138,11 @@ class BaseEnemy < Entity
   end
 
   def spawnpos
-    @pos ||= [rand(0...MIDDLE[0]*2),rand(0...MIDDLE[1]*2)] # om tom
+    @pos ||= begin #begin tillåter multiline expressions i en tilldelning, som en diskret funktion ungefär
+      angle = rand(360.0)
+      distance = [WORLD_HALF[0],WORLD_HALF[1]].min*0.9 #*0.9 för att de inte ska spawna för långt ut
+      [Gosu.offset_x(angle,distance), Gosu.offset_y(angle,distance)]
+    end
   end
 
   def draw

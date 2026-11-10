@@ -60,6 +60,7 @@ class World_instance
         #och https://docs.ruby-lang.org/en/4.0/syntax/calling_methods_rdoc.html
         
         return if @buildings.any? {|t|t.pos==mpos} # säg nej till flera på samma ställe
+        return if mpos[0].abs>WORLD_HALF[0] || mpos[1].abs>WORLD_HALF[1]
         
         building = @selected_building.new(TOWER_OPT[@selected_building][:health])
 
@@ -82,16 +83,19 @@ class World_instance
 
     def draw_grid
         color = Gosu::Color.argb(0x20_ffffff)
-        bright = Camera.x + MIDDLE[0]*2 / Camera.zoom
-        bottomr = Camera.y + MIDDLE[1]*2 / Camera.zoom
-        first_x = (Camera.x/TILE).floor*TILE
-        first_y = (Camera.y/TILE).floor*TILE
-        first_x.step(bright, TILE) do |x|
-            Gosu.draw_line(x, Camera.y, color, x, bottomr, color, 0)
+
+        left = [Camera.x,-WORLD_HALF[0]].max
+        top = [Camera.y,-WORLD_HALF[1]].max
+        right = [Camera.x+(MIDDLE[0]*2)/Camera.zoom, WORLD_HALF[0]].min
+        bottom = [Camera.y+(MIDDLE[1]*2)/Camera.zoom, WORLD_HALF[1]].min
+        first_x = (left/TILE).floor*TILE
+        first_y = (top/TILE).floor*TILE
+        first_x.step(right, TILE) do |x|
+            Gosu.draw_line(x, top, color, x, bottom, color, 0)
         end
 
-        first_y.step(bottomr, TILE) do |y|
-            Gosu.draw_line(Camera.x, y, color, bright, y, color, 0)
+        first_y.step(bottom, TILE) do |y|
+            Gosu.draw_line(left, y, color, right, y, color, 0)
         end
     end
 

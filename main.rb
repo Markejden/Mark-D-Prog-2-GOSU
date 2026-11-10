@@ -5,8 +5,11 @@ require_relative 'modules'
 require_relative 'world_gen'
 require_relative 'world_process'
 
-MIDDLE = [320*2, 240*2]
+MIDDLE = [Gosu.screen_width/2, Gosu.screen_height/2] # kommer nog inte användas så mycket lägre
 TILE = 16
+WORLD = [200,200]
+WORLD_HALF = [WORLD[0]*TILE/2.0, WORLD[1]*TILE/2.0]
+WORLD_CENTER = [0.0, 0.0]
 FONT = Gosu::Font.new(20)
 
 class Window < Gosu::Window
@@ -18,9 +21,13 @@ class Window < Gosu::Window
     Clock.reset
 
     self.caption = "Game"
+    self.fullscreen = true
+
+    Camera.reset
+    Camera.center_on(*WORLD_CENTER)
 
     @text = []
-    @grid = generate_world(rand(100),100,100,0.1,1)
+    @grid = generate_world(rand(100.0),*WORLD,0.1,1)
     @prev_mouse = nil
 
     @world = World_instance.new
@@ -42,6 +49,7 @@ class Window < Gosu::Window
 
       when Gosu::KB_E then Camera.zoom_to(mouse_x, mouse_y, 1.4)
       when Gosu::KB_Q then Camera.zoom_to(mouse_x, mouse_y, 0.6)
+      when Gosu::KB_ESCAPE then self.close!
     end
   end
 
@@ -55,9 +63,11 @@ class Window < Gosu::Window
     else
       @prev_mouse = nil
     end
-
-    Camera.x = Camera.x.clamp((-100/0.25)-MIDDLE[0]/0.25,100/0.25)
-    Camera.y = Camera.y.clamp((-100/0.25)-MIDDLE[1]/0.25,100/0.25)
+    if button_down? Gosu::KB_W then Camera.y -= 20/Camera.zoom end
+    if button_down? Gosu::KB_S then Camera.y += 20/Camera.zoom end
+    if button_down? Gosu::KB_A then Camera.x -= 20/Camera.zoom end
+    if button_down? Gosu::KB_D then Camera.x += 20/Camera.zoom end
+    Camera.clamp_to(-WORLD_HALF[0], -WORLD_HALF[1], WORLD_HALF[0], WORLD_HALF[1])
   end
 
   def draw
@@ -68,9 +78,9 @@ class Window < Gosu::Window
     end
   end
 
-  def draw_world
-    @grid.each do |x| # x är en hash och efter .to_a kommer den se ut som [[1,1],"type"] - alltså .first[0] för att nå xpos
-      Gosu.draw_rect((x.to_a.first[0] - TILE/2)*TILE, (x.to_a.first[1]- TILE/2)*TILE, TILE, TILE, Gosu::Color.rgba(255, 50, 100, 100), -1)
+  def draw_world #denna var extremt buggad och alla zooms och spawns var offset
+    @grid.each do |(tx, ty), type| #type används inte
+      Gosu.draw_rect(tx*TILE,ty*TILE,TILE,TILE,Gosu::Color.rgba(255,50,100,100),-1)
     end
   end
 
