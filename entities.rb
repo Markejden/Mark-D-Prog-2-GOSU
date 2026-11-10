@@ -44,8 +44,11 @@ end
 class BaseTurret < Entity
   include Targeting
   attr_reader :aim_range
+
+  SPRITE_PATH = "resources/topdownturret.png"
+  def self.sprite = @sprite ||= Gosu::Image.new(SPRITE_PATH)
+
   def initialize(health)
-    @sprite = Gosu::Image.new("resources/topdownturret.png") #https://toppng.com/free-image/turrets-top-down-turret-PNG-free-PNG-Images_188356
     @aim_range = 100
     @turret_angle = 0
     @turret_spin_speed = 6
@@ -88,7 +91,7 @@ class BaseTurret < Entity
 
   def draw
     return unless exists?
-    @sprite.draw_rot(@pos[0],@pos[1],1,@turret_angle, 0.5, 0.5, TILE.to_f/100, TILE.to_f/100) #sista fyra är midx,midy,sizex,sizey
+    BaseTurret.sprite.draw_rot(@pos[0],@pos[1],1,@turret_angle, 0.5, 0.5, TILE.to_f/100, TILE.to_f/100) #sista fyra är midx,midy,sizex,sizey
   end
 end
 
@@ -106,7 +109,7 @@ end
 
 class BaseEnemy < Entity
   include Targeting
-  attr_reader :alive, :speed, :health, :size, :pos
+  attr_reader :speed, :size
 
   def initialize(health)
     @size = 10.0
@@ -118,7 +121,7 @@ class BaseEnemy < Entity
   def update(buildings)
     super
     return unless @pos
-    target = closest_to(@pos,buildings.select(&:alive))
+    target = closest_to(@pos,buildings)
     tx, ty = target ? target.pos : WORLD_CENTER
     aim_for(tx, ty, target)
   end
@@ -140,8 +143,7 @@ class BaseEnemy < Entity
   def spawnpos
     @pos ||= begin #begin tillåter multiline expressions i en tilldelning, som en diskret funktion ungefär
       angle = rand(360.0)
-      distance = [WORLD_HALF[0],WORLD_HALF[1]].min*0.9 #*0.9 för att de inte ska spawna för långt ut
-      [Gosu.offset_x(angle,distance), Gosu.offset_y(angle,distance)]
+      [Gosu.offset_x(angle,WORLD_HALF[0]*0.9), Gosu.offset_y(angle,WORLD_HALF[1]*0.9)]
     end
   end
 

@@ -1,6 +1,8 @@
 require_relative 'modules'
+require_relative 'entities'
+require_relative 'world_gen'
 
-class World_instance
+class WorldInstance
     include Timedt
     include Common
 
@@ -15,6 +17,11 @@ class World_instance
         @buildings = []
         @selected_building = BaseTurret
 
+        @seed = Random.new_seed
+        @grid = generate_world(@seed,0.05,1)
+        @ore_img = nil
+        build_ores
+
         @spawn_time = 0.0
         @text = []
 
@@ -24,6 +31,7 @@ class World_instance
     def update
         waves()
         entity_update()
+        update_text()
     end
 
     def draw
@@ -31,14 +39,15 @@ class World_instance
             @enemies.each(&:draw)
             @buildings.each(&:draw)
             draw_grid()
+            draw_world
         end
     end
 
     def entity_update
         @enemies.each{|enemy|enemy.update(@buildings)}
-        @enemies.reject!{|enemy|!enemy.alive && !enemy.exists?} # ta bort döda
+        @enemies.reject!{|enemy|!enemy.alive || !enemy.exists?} # ta bort döda
         @buildings.each{|building|building.update(@enemies)} #skicka in enenmies för track closest
-        @buildings.reject!{|building|!building.alive}
+        @buildings.reject!{|building|!building.alive || !building.exists?}
     end
 
     def entity_died(entity)
@@ -51,6 +60,11 @@ class World_instance
     def entity_damaged(entity, damage)
         return unless entity.is_a?(BaseEnemy)
         @text << [damage.floor.to_s,entity.pos[0],entity.pos[1],1.0]
+    end
+
+    def update_text
+        @text.each{|x|x[3]-=dt;x[2]-=x[3]*dt}
+        @text.reject!{|x|x[3]<=-0.5}
     end
 
     def place_building(mpos)
@@ -69,9 +83,15 @@ class World_instance
         @buildings << building
     end
 
+    def remove_building(mpos)
+        building = @buildings.select{|x|x.pos==mpos}.first
+        return unless building
+        building.change_pos(nil)
+    end
+
     def waves
         @spawn_time += dt
-        if @spawn_time >= 1.0
+        while @spawn_time >= 1.0
             enemy = BaseEnemy.new(100.0)
 
             enemy.subscribe(self)
@@ -99,4 +119,32 @@ class World_instance
         end
     end
 
+    def draw_world
+        @ore_img.draw(-WORLD_HALF[0],-WORLD_HALF[1], -1, TILE,TILE)
+    end
+
+    def build_ores #mer på denna finns i min loggbok 2026-11-09
+        w,h = WORLD
+        half_w, half_h = w/2, h/2
+
+        pixel = Array.new(w*h*4,0)
+        @grid.each do |(tx, ty), type|
+            col = tx + half_w
+            row = ty + half_h
+            i = (row*w + col)*4
+
+            color = (type == :master_ore) ? [255,200,100,150] : [255, 50, 100, 100]
+            pixel[i,4] = color
+        end
+        
+        raw = Gosu::Image::BlobHelper.new(w, h, pixel.pack("C*"))
+        @ore_img = Gosu::Image.new(raw, retro: true)
+        #@ore_img = Gosu::Image.from_blob(w,h,pixel.pack("C*"))
+        #jag hade tänkt att använda from_blob metoden men den använde antialiasing när bilden scaleades så den blev blurrig
+        
+        #dessa 2 linjer är de mest "advancerade" i programmet so far & tog längst tid att "hitta"
+        #jag säger hitta för att koden fanns redan delvis i ruby filerna
+        
+        #mer på det finns i min loggbok 2026-11-09
+    end
 end

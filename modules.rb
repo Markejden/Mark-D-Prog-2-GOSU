@@ -10,7 +10,7 @@ module Clock
 
   def tick
     now = Gosu.milliseconds
-    @dt = (now - @prev) / 1000.0
+    @dt = [(now - @prev) / 1000.0, 0.05].min
     @prev = now
   end
 end
