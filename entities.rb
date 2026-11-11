@@ -155,3 +155,11 @@ class BaseEnemy < Entity
     Gosu.draw_rect(@pos[0]-@size/2, @pos[1] - ((@size/5)*4)-@size/2, @size * ratio, @size - ((@size/5)*4), Gosu::Color.argb(0xff_ff0000), 0)
   end
 end
+
+class FastEnemy < BaseEnemy
+  def initialize(health)
+    super(health)
+    @size = 15.0
+    @speed = 100
+  end
+end

@@ -60,9 +60,9 @@ class Window < Gosu::Window
     if Gosu.button_down? Gosu::MS_LEFT
       @mouse_timer += 1
       @mouse_timer = @mouse_timer.clamp(0,10)
-      if @mouse_timer >= 8 then camera_shift end
+      if @mouse_timer >= 6 then camera_shift end
     else
-      if !(@mouse_timer == 0) && @mouse_timer < 8
+      if !(@mouse_timer == 0) && @mouse_timer < 10
         @world.place_building(snap(*Camera.trans_worldpos(mouse_x, mouse_y)))
       end
       @mouse_timer = 0

@@ -93,10 +93,14 @@ class WorldInstance
         @spawn_time += dt
         while @spawn_time >= 1.0
             enemy = BaseEnemy.new(100.0)
+            enemy2 = FastEnemy.new(150.0)
 
             enemy.subscribe(self)
+            enemy2.subscribe(self)
             enemy.spawnpos
+            enemy2.spawnpos
             @enemies << enemy
+            @enemies << enemy2
             @spawn_time -= 1.0
         end
     end
