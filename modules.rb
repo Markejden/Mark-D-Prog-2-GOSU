@@ -66,11 +66,23 @@ end
 
 module Targeting
   def closest_to(mid, target)
-    target.select{|x| x.alive? && x.exists?}.min_by do |x|
-      (x.pos[0]-mid[0])**2 + (x.pos[1] - mid[1])**2
+    best = nil
+    best_dist = Float::INFINITY
+    midx, midy = mid
+    target.each do |x|
+
+      next unless x.alive? && x.exists?
+      posx, posy = x.pos
+      dist = (posx-midx)**2 + (posy-midy)**2
+
+      next unless dist < best_dist
+      best_dist = dist
+      best = x
     end
+    best
   end
 end
+
 #anledningen till att inte ha self på dessa är för att skydda namespace för
 #klasser och funktioner som inte använder dem
 #det är även för att de inte behövs delas, worldpos, camera och tid behöver delas

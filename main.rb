@@ -58,11 +58,11 @@ class Window < Gosu::Window
 
   def sequence_inputs
     if Gosu.button_down? Gosu::MS_LEFT
-      @mouse_timer += 1
+      @mouse_timer += dt
       @mouse_timer = @mouse_timer.clamp(0,10)
-      if @mouse_timer >= 6 then camera_shift end
+      if @mouse_timer >= 0.075 then camera_shift end
     else
-      if !(@mouse_timer == 0) && @mouse_timer < 10
+      if !(@mouse_timer == 0) && @mouse_timer < 0.15
         @world.place_building(snap(*Camera.trans_worldpos(mouse_x, mouse_y)))
       end
       @mouse_timer = 0
@@ -70,10 +70,10 @@ class Window < Gosu::Window
     end
     if button_down? Gosu::MS_RIGHT then @world.remove_building(snap(*Camera.trans_worldpos(mouse_x, mouse_y))) end
 
-    if button_down? Gosu::KB_W then Camera.y -= 20/Camera.zoom end
-    if button_down? Gosu::KB_S then Camera.y += 20/Camera.zoom end
-    if button_down? Gosu::KB_A then Camera.x -= 20/Camera.zoom end
-    if button_down? Gosu::KB_D then Camera.x += 20/Camera.zoom end
+    if button_down? Gosu::KB_W then Camera.y -= dt*1000/Camera.zoom end
+    if button_down? Gosu::KB_S then Camera.y += dt*1000/Camera.zoom end
+    if button_down? Gosu::KB_A then Camera.x -= dt*1000/Camera.zoom end
+    if button_down? Gosu::KB_D then Camera.x += dt*1000/Camera.zoom end
 
     Camera.clamp_to(-WORLD_HALF[0], -WORLD_HALF[1], WORLD_HALF[0], WORLD_HALF[1])
   end
@@ -91,6 +91,10 @@ class Window < Gosu::Window
     Camera.shift do 
       draw_text()
     end
+
+    FONT.draw_text(Gosu.fps, 10, 10, 1, 2.0, 2.0, Gosu::Color.rgb(255, 255, 255))
+    FONT.draw_text(@world.enemies.size, 10, 40, 1, 2.0, 2.0, Gosu::Color.rgb(255, 255, 255))
+    FONT.draw_text(@world.buildings.size, 10, 70, 1, 2.0, 2.0, Gosu::Color.rgb(255, 255, 255))
   end
 
   def draw_text

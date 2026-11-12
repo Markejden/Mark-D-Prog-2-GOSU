@@ -45,16 +45,20 @@ class BaseTurret < Entity
   include Targeting
   attr_reader :aim_range
 
+  RETARGET_TIME = 0.1
+
   SPRITE_PATH = "resources/topdownturret.png"
   def self.sprite = @sprite ||= Gosu::Image.new(SPRITE_PATH)
 
   def initialize(health)
     @aim_range = 100
     @turret_angle = 0
-    @turret_spin_speed = 6
+    @turret_spin_speed = 300
     @damage = 80.0
     @reload_time = 1.0
     @aim_spread = 5
+    @target = nil
+    @retarget_timer = 0.0 #ingen rand behövs då det redan är offset av timing då man klickar ut buildingen
     super
   end
 
@@ -73,20 +77,24 @@ class BaseTurret < Entity
   end
 
   def enemy_tracking(enemies)
-    return if enemies.empty?
-    closest_enemy = closest_to(@pos, enemies)
-    return unless closest_enemy
-    return unless closest_enemy.exists?
-    return unless closest_enemy.alive?
+    @retarget_timer -= dt
+    target_gone = @target && !(@target.alive? && @target.exists?)
 
-    return unless Gosu.distance(@pos[0], @pos[1], closest_enemy.pos[0], closest_enemy.pos[1]) < @aim_range
+    if @retarget_timer <= 0 || target_gone
+      @target = closest_to(@pos, enemies)
+      @retarget_timer = RETARGET_TIME
+    end
+    return unless @target
 
-    target_angle = Gosu.angle(@pos[0], @pos[1], closest_enemy.pos[0], closest_enemy.pos[1])
+    return unless (@target.pos[0] - @pos[0])**2 + (@target.pos[1] - @pos[1])**2 < @aim_range * @aim_range
+    #ingen gosu::distance då den räknar med roten ur vilket är mycket långsammare för ett värde man bara ska jämföra
+
+    target_angle = Gosu.angle(@pos[0], @pos[1], @target.pos[0], @target.pos[1])
     close_turn = Gosu.angle_diff(@turret_angle,target_angle)
 
-    @turret_angle += close_turn.clamp(-@turret_spin_speed, @turret_spin_speed)
+    @turret_angle += close_turn.clamp(-@turret_spin_speed * dt, @turret_spin_speed * dt)
     
-    turret_fire(close_turn, closest_enemy)
+    turret_fire(close_turn, @target)
   end
 
   def draw
@@ -110,20 +118,30 @@ end
 class BaseEnemy < Entity
   include Targeting
   attr_reader :speed, :size
+  RETARGET_TIME = 0.3
 
   def initialize(health)
     @size = 10.0
     @speed = 50
     @damage = 50
+    @target = nil
+    @retarget_timer = rand * RETARGET_TIME #rand för att sprida ut timings för när algoritmen körs
     super(health)
   end
 
   def update(buildings)
     super
     return unless @pos
-    target = closest_to(@pos,buildings)
-    tx, ty = target ? target.pos : WORLD_CENTER
-    aim_for(tx, ty, target)
+
+    @retarget_timer -= dt
+    target_gone = @target && !(@target.alive? && @target.exists?)
+    if @retarget_timer <= 0 || target_gone
+      @target = closest_to(@pos,buildings)
+      @retarget_timer = RETARGET_TIME
+    end
+
+    tx, ty = @target ? @target.pos : WORLD_CENTER
+    aim_for(tx, ty, @target)
   end
 
   def aim_for(tx,ty,target=nil)
@@ -161,5 +179,12 @@ class FastEnemy < BaseEnemy
     super(health)
     @size = 15.0
     @speed = 100
+  end
+end
+
+class SquadLeaderEnemy < BaseEnemy
+  def initialize(health)
+    super(health)
+    
   end
 end

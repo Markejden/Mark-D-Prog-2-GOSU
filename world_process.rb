@@ -11,7 +11,7 @@ class WorldInstance
     Wall=>{health: 200.0 }}
 
     attr_accessor :text, :selected_building
-    attr_reader :enemies
+    attr_reader :enemies, :buildings
     def initialize
         @enemies = []
         @buildings = []
@@ -35,12 +35,21 @@ class WorldInstance
     end
 
     def draw
+        left = [Camera.x,-WORLD_HALF[0]].max
+        top = [Camera.y,-WORLD_HALF[1]].max
+        right = [Camera.x+(MIDDLE[0]*2)/Camera.zoom, WORLD_HALF[0]].min
+        bottom = [Camera.y+(MIDDLE[1]*2)/Camera.zoom, WORLD_HALF[1]].min
         Camera.shift do 
-            @enemies.each(&:draw)
-            @buildings.each(&:draw)
-            draw_grid()
+            @enemies.each{|x|x.draw if visible?(x,left,top,right,bottom)}
+            @buildings.each{|x|x.draw if visible?(x,left,top,right,bottom)}
+            draw_grid(left,top,right,bottom)
             draw_world
         end
+    end
+
+    def visible?(obj, left, top, right, bottom, offset = TILE) #offset för att de inte ska gå från hide till show när de är i viewport
+        pos = obj.pos
+        pos && pos[0] > left - offset && pos[0] < right + offset && pos[1] > top - offset  && pos[1] < bottom + offset
     end
 
     def entity_update
@@ -59,7 +68,7 @@ class WorldInstance
 
     def entity_damaged(entity, damage)
         return unless entity.is_a?(BaseEnemy)
-        @text << [damage.floor.to_s,entity.pos[0],entity.pos[1],1.0]
+        @text << [damage.floor.to_s,entity.pos[0],entity.pos[1],1.0] unless entity.pos.nil?
     end
 
     def update_text
@@ -105,13 +114,9 @@ class WorldInstance
         end
     end
 
-    def draw_grid
+    def draw_grid(left,top,right,bottom)
         color = Gosu::Color.argb(0x20_ffffff)
 
-        left = [Camera.x,-WORLD_HALF[0]].max
-        top = [Camera.y,-WORLD_HALF[1]].max
-        right = [Camera.x+(MIDDLE[0]*2)/Camera.zoom, WORLD_HALF[0]].min
-        bottom = [Camera.y+(MIDDLE[1]*2)/Camera.zoom, WORLD_HALF[1]].min
         first_x = (left/TILE).floor*TILE
         first_y = (top/TILE).floor*TILE
         first_x.step(right, TILE) do |x|
